@@ -1,0 +1,94 @@
+import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from './AuthContext';
+import { addSyncAction } from '../services/db';
+
+const ExpenseContext = createContext();
+
+export const useExpenses = () => useContext(ExpenseContext);
+
+export const ExpenseProvider = ({ children }) => {
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchExpenses();
+    } else {
+      setExpenses([]);
+    }
+  }, [user]);
+
+  const fetchExpenses = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get('http://localhost:5000/api/expenses');
+      setExpenses(res.data);
+      // Sync to local storage for offline support
+      localStorage.setItem('offline_expenses', JSON.stringify(res.data));
+    } catch (err) {
+      setError('Failed to fetch expenses');
+      // Load offline data if network fails
+      const offline = localStorage.getItem('offline_expenses');
+      if (offline) setExpenses(JSON.parse(offline));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addExpense = async (expenseData) => {
+    // Optimistic UI update
+    const optimisticExp = { ...expenseData, _id: Date.now().toString(), offline: true };
+    setExpenses([optimisticExp, ...expenses]);
+    
+    try {
+      const res = await axios.post('http://localhost:5000/api/expenses', expenseData);
+      setExpenses(current => current.map(e => e._id === optimisticExp._id ? res.data : e));
+    } catch (err) {
+      if (!navigator.onLine || err.code === 'ERR_NETWORK') {
+        // We're offline, use background sync or IDB fallback
+        await addSyncAction({ type: 'ADD_EXPENSE', payload: expenseData });
+        setError('Saved offline. Will sync when back online.');
+      } else {
+        setError('Failed to add expense');
+        // Rollback optimistic update on real error
+        setExpenses(current => current.filter(e => e._id !== optimisticExp._id));
+      }
+    }
+  };
+
+  const updateExpense = async (id, expenseData) => {
+    try {
+      const res = await axios.put(`http://localhost:5000/api/expenses/${id}`, expenseData);
+      setExpenses(expenses.map(exp => (exp._id === id ? res.data : exp)));
+    } catch (err) {
+      setError('Failed to update expense');
+      throw err;
+    }
+  };
+
+  const deleteExpense = async (id) => {
+    const backup = expenses;
+    setExpenses(expenses.filter(exp => exp._id !== id));
+    
+    try {
+      await axios.delete(`http://localhost:5000/api/expenses/${id}`);
+    } catch (err) {
+      if (!navigator.onLine || err.code === 'ERR_NETWORK') {
+        await addSyncAction({ type: 'DELETE_EXPENSE', payload: { id } });
+        setError('Deleted offline. Will sync when back online.');
+      } else {
+        setError('Failed to delete expense');
+        setExpenses(backup);
+      }
+    }
+  };
+
+  return (
+    <ExpenseContext.Provider value={{ expenses, loading, error, fetchExpenses, addExpense, updateExpense, deleteExpense }}>
+      {children}
+    </ExpenseContext.Provider>
+  );
+};
