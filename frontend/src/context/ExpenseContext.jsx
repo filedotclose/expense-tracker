@@ -41,7 +41,7 @@ export const ExpenseProvider = ({ children }) => {
   const addExpense = async (expenseData) => {
     // Optimistic UI update
     const optimisticExp = { ...expenseData, _id: Date.now().toString(), offline: true };
-    setExpenses([optimisticExp, ...expenses]);
+    setExpenses(current => [optimisticExp, ...current]);
     
     try {
       const res = await axios.post('http://localhost:5000/api/expenses', expenseData);
@@ -55,6 +55,7 @@ export const ExpenseProvider = ({ children }) => {
         setError('Failed to add expense');
         // Rollback optimistic update on real error
         setExpenses(current => current.filter(e => e._id !== optimisticExp._id));
+        throw err;
       }
     }
   };
@@ -62,7 +63,7 @@ export const ExpenseProvider = ({ children }) => {
   const updateExpense = async (id, expenseData) => {
     try {
       const res = await axios.put(`http://localhost:5000/api/expenses/${id}`, expenseData);
-      setExpenses(expenses.map(exp => (exp._id === id ? res.data : exp)));
+      setExpenses(current => current.map(exp => (exp._id === id ? res.data : exp)));
     } catch (err) {
       setError('Failed to update expense');
       throw err;
@@ -70,8 +71,12 @@ export const ExpenseProvider = ({ children }) => {
   };
 
   const deleteExpense = async (id) => {
-    const backup = expenses;
-    setExpenses(expenses.filter(exp => exp._id !== id));
+    setExpenses(current => {
+      const backup = current;
+      const filtered = current.filter(exp => exp._id !== id);
+      // We handle the backup via closure in the error block
+      return filtered;
+    });
     
     try {
       await axios.delete(`http://localhost:5000/api/expenses/${id}`);
@@ -81,7 +86,9 @@ export const ExpenseProvider = ({ children }) => {
         setError('Deleted offline. Will sync when back online.');
       } else {
         setError('Failed to delete expense');
-        setExpenses(backup);
+        // On error, fetch again to restore state
+        fetchExpenses();
+        throw err;
       }
     }
   };

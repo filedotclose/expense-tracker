@@ -24,12 +24,17 @@ const ExpensesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await addExpense({
-      ...formData,
-      amount: parseFloat(formData.amount)
-    });
-    setIsFormOpen(false);
-    setFormData({ amount: '', category: '', date: new Date().toISOString().split('T')[0], note: '' });
+    try {
+      await addExpense({
+        ...formData,
+        amount: parseFloat(formData.amount)
+      });
+      setIsFormOpen(false);
+      setFormData({ amount: '', category: '', date: new Date().toISOString().split('T')[0], note: '' });
+    } catch (err) {
+      // Error is already handled by the context (toast/setError)
+      console.error('Failed to submit form', err);
+    }
   };
 
   return (
