@@ -23,8 +23,9 @@ function App() {
       <ExpenseProvider>
         <Router>
           <div className="app-container">
+            <div className="bg-pattern"></div>
             <Navbar />
-            <main className="main-content">
+            <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full relative z-10">
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
