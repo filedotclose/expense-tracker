@@ -18,7 +18,8 @@ const Navbar = () => {
     <nav className="navbar glass">
       <div className="navbar-brand">
         <Wallet className="icon-brand" />
-        <span className="text-gradient">ExpensePWA</span>
+        <span className="text-gradient">Expensify</span>
+
       </div>
       <div className="navbar-links">
         <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>

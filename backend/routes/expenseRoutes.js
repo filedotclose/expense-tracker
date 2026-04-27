@@ -22,7 +22,7 @@ router.route('/')
   .post(protect, validateRequest(expenseSchema), createExpense);
 
 router.route('/:id')
-  .put(protect, validateRequest(expenseSchema), updateExpense)
+  .put(protect, validateRequest(expenseSchema.partial()), updateExpense)
   .delete(protect, deleteExpense);
 
 module.exports = router;

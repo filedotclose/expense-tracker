@@ -11,7 +11,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Zod validation error
-  if (err instanceof z.ZodError) {
+  if (err.name === 'ZodError') {
     statusCode = 400;
     message = err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
   }
