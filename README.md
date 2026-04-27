@@ -50,7 +50,7 @@ expense-tracker-pwa/
 │   │   ├── sw.js           # Custom Workbox Service Worker
 │   │   ├── App.jsx         # Routing & Protected Routes
 │   │   └── index.css       # Core Design System
-└── .planning/              # Antigravity architectural documents & task specs
+└── .planning/              #architectural documents & task specs
 ```
 
 ## 💻 Getting Started
@@ -92,5 +92,3 @@ To install the app on your device:
 2.  Open the app in Chrome or Safari.
 3.  Click the "Install App" icon in the address bar (Desktop) or select "Add to Home Screen" from the share menu (Mobile).
 
----
-*Built autonomously via the Antigravity Engineering Collective.*
